@@ -15,6 +15,7 @@
     <!-- Formulario -->
     <form>
         <input type="text" id="inputURL" placeholder="Put here your URL (eg. https://amazon.es)">
+        <input type="text" id="customSlug" placeholder="Put here your slug">
         <button type="button" id="btnProcess">Short & Change URL</button>
     </form>
 
@@ -46,6 +47,7 @@
         const buttonProcess = document.getElementById('btnProcess');
         const result = document.getElementById('result');
         const buttonCopy = document.getElementById('btnCopy');
+        const customSlugInput = document.getElementById('customSlug')
 
 
         // 3. LISTENERS
@@ -56,6 +58,8 @@
         // 4. FUNCIONES PRINCIPALES
         async function changeURL() {
             let textURL = input.value.trim();
+            let customSlug = customSlugInput.value.trim();
+
             if (!textURL) return alert("Please enter a valid URL");
 
             // Aseguramos que empiece por http:// o https:// para que no rompa
@@ -64,13 +68,24 @@
             }
 
             try {
-                // Añadimos el UTM a la URL original
                 const url = new URL(textURL);
-                url.searchParams.set('utm_source', 'LLMassitance');
-                const finalTargetURL = url.toString();
 
-                // Generamos el slug único
-                const slug = generateShortSlug();
+                let slug = '';
+
+                // If he wrote an slug
+                if (customSlug) {
+                    // Clean space or imperfection to avoid anything weird
+                    slug = customSlug.replace(/[^a-zA-Z0-9-_]/g, '');
+
+                    // Check in supabase if that slug exist
+                    const { data: existingLink } = await supabaseClient.from('links').select('slug').eq('slug', slug).maybeSingle();
+
+                    if (existingLink) {
+                        return alert("The alias ${slug} is already taken.")
+                    }
+                } else {
+                    slug = generateShortSlug();
+                }
 
                 // Creamos la URL corta que se le mostrará al usuario
                 const shortLink = `${window.location.origin}/${slug}`;
@@ -80,7 +95,7 @@
                 qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(shortLink);
 
                 // GUARDAMOS EN SUPABASE
-                await saveLink(slug, finalTargetURL);
+                await saveLink(slug, url.toString());
 
             } catch (err) {
                 alert("Invalid URL format");
