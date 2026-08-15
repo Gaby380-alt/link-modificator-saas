@@ -1,0 +1,94 @@
+*{
+    font-family: Arial;
+    margin: 0%;
+}
+
+
+/* HEADER */
+.header-content {
+    margin: auto;
+    width: 1000px;
+}
+
+.title-header {
+    margin-top: 20px;
+    margin-bottom: 20px;
+
+    font-size: 50px;
+    color: rgb(102, 0, 255);
+}
+
+.sub-tittle-header {
+    font-size: 20px;
+    color:rgb(90, 0, 158);
+}
+
+.input-box {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.input-url-box {
+    width: 25%;
+    height: 35px;
+    border: 1px solid black;
+    outline: 0;
+    padding: 10px;
+    border-radius: 10px;
+
+    font-size: 200%;
+}
+
+.input-slug-box {
+    width: 25%;
+    height: 35px;
+    border: 1px solid black;
+    outline: 0;
+    padding: 10px;
+    border-radius: 10px;
+
+    font-size: 200%;
+}
+
+.input-btn-process{
+    width: 360px;
+    height: 57px;
+    border-radius: 10px;
+    outline: 0;
+    border: 1px solid grey;
+
+    font-size: 200%;
+    color: white;
+    background-color: black;
+}
+
+.result-box {
+    margin-top: 20px;
+    margin-bottom: 20px;
+
+    display: flex;
+    gap: 5px;
+}
+
+.result-text-box {
+    width: 25%;
+    height: 35px;
+    border: 1px solid black;
+    outline: 0;
+    padding: 10px;
+    border-radius: 10px;
+
+    font-size: 200%;
+}
+
+.result-btn-copy {
+    width: 60px;
+    height: 57px;
+    border-radius: 10px;
+    outline: 0;
+    border: 1px solid grey;
+
+    font-size: 200%;
+    color: white;
+    background-color: black;
+}

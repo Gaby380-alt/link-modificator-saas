@@ -1,0 +1,140 @@
+// 1. CONFIGURACIÓN DE SUPABASE
+        const SUPABASE_URL = 'https://zgzfbocdzvqqorvmznhf.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_sdRq15KKauGnqL9OHcklpw_FCCIwv1p';
+
+        // Evitamos el error de scope cambiando el nombre a supabaseClient
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+        // 2. ELEMENTOS DEL DOM
+        const imgBox = document.getElementById('imgBox');
+        const qrImg = document.getElementById('QRimg');
+        const input = document.getElementById('inputURL');
+        const buttonProcess = document.getElementById('btnProcess');
+        const result = document.getElementById('result');
+        const buttonCopy = document.getElementById('btnCopy');
+        const customSlugInput = document.getElementById('customSlug')
+
+
+        // 3. LISTENERS
+        buttonProcess.addEventListener('click', changeURL);
+        buttonCopy.addEventListener('click', copyText);
+
+
+        // 4. FUNCIONES PRINCIPALES
+        async function changeURL() {
+            let textURL = input.value.trim();
+            let customSlug = customSlugInput.value.trim();
+
+            if (!textURL) return alert("Please enter a valid URL");
+
+            // Aseguramos que empiece por http:// o https:// para que no rompa
+            if (!textURL.startsWith('http://') && !textURL.startsWith('https://')) {
+                textURL = 'https://' + textURL;
+            }
+
+            try {
+                const url = new URL(textURL);
+
+                let slug = '';
+
+                // If he wrote an slug
+                if (customSlug) {
+                    // Clean space or imperfection to avoid anything weird
+                    slug = customSlug.replace(/[^a-zA-Z0-9-_]/g, '');
+
+                    // Check in supabase if that slug exist
+                    const { data: existingLink } = await supabaseClient.from('links').select('slug').eq('slug', slug).maybeSingle();
+
+                    if (existingLink) {
+                        return alert("The alias ${slug} is already taken.")
+                    }
+                } else {
+                    slug = generateShortSlug();
+                }
+
+                // Creamos la URL corta que se le mostrará al usuario
+                const shortLink = `${window.location.origin}/${slug}`;
+                result.value = shortLink;
+
+                // Generamos el QR apuntando a la URL corta
+                qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(shortLink);
+
+                // GUARDAMOS EN SUPABASE
+                await saveLink(slug, url.toString());
+
+            } catch (err) {
+                alert("Invalid URL format");
+                console.error(err);
+            }
+        }
+
+        async function copyText() {
+            try {
+                await navigator.clipboard.writeText(result.value);
+                buttonCopy.textContent = "Copied!";
+                setTimeout(() => { buttonCopy.textContent = "❐"; }, 1500);
+            } catch (error) {
+                alert("Error copying text"); 
+            }
+        }
+
+        // Generador de Slug (6 caracteres)
+        function generateShortSlug(num_of_characters = 6) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < num_of_characters; i++) {
+                const randIndex = Math.floor(Math.random() * characters.length);
+                result += characters.charAt(randIndex);
+            }
+            return result;
+        }
+
+        // GUARDAR EN SUPABASE
+        async function saveLink(slug, longURL) {
+            const { data, error } = await supabaseClient
+                .from('links')
+                .insert([{ slug: slug, target_url: longURL }]);
+
+            if (error) console.error('Error to save:', error);
+            else console.log('Link saved successfully in Supabase!');
+        }
+
+        // REDIRECCIÓN (Se ejecuta al entrar a la página)
+        // REDIRECCIÓN INTELIGENTE (Soporta local y producción)
+        async function redirection() {
+            // 1. Buscamos el slug en la URL (ya sea /q6X1ye o ?s=q6X1ye)
+            const urlParams = new URLSearchParams(window.location.search);
+            let slug = urlParams.get('s') || window.location.pathname.replace('/', '');
+
+            // Limpiamos si viene con index.html
+            if (slug.includes('index.html')) {
+                slug = slug.replace('index.html', '').replace('/', '');
+            }
+
+            if (slug) {
+                console.log("Buscando destino para el slug:", slug);
+
+                const { data, error } = await supabaseClient
+                    .from('links')
+                    .select('target_url')
+                    .eq('slug', slug)
+                    .single();
+
+                if (error) {
+                    console.error("Error buscando el slug:", error);
+                    return;
+                }
+
+                if (data && data.target_url) {
+                    console.log("¡Redirigiendo a:", data.target_url);
+                    window.location.href = data.target_url; // ¡Nos lleva a Wasmer!
+                } else {
+                    console.warn("El slug no existe en la base de datos.");
+                }
+                
+            }
+        }
+
+        // ¡Ejecutamos la comprobación de redirección al cargar la web!
+        redirection();
